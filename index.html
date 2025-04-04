@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch 專案展示</title>
+    <style>
+        /* 整體美化 */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .input-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 80%;
+            max-width: 500px;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 12px 15px;
+            font-size: 16px;
+            color: white;
+            background-color: #28a745;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        #scratchContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .scratch-project {
+            width: 32%;
+            aspect-ratio: 16 / 9;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+            padding-top: 40px;
+        }
+
+        .scratch-project iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .like-button {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+        }
+
+        /* 按鈕顏色，每個專案不同，且不為紅色 */
+        .color-1 { background-color: #007bff; } /* 藍色 */
+        .color-2 { background-color: #28a745; } /* 綠色 */
+        .color-3 { background-color: #ffcc00; } /* 黃色 */
+        .color-4 { background-color: #6c757d; } /* 灰色 */
+        .color-5 { background-color: #17a2b8; } /* 青色 */
+        .color-6 { background-color: #fd7e14; } /* 橘色 */
+
+        .like-button:hover {
+            opacity: 0.8;
+        }
+
+        @media (max-width: 1024px) {
+            .scratch-project {
+                width: 48%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .scratch-project {
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Scratch 專案展示</h2>
+    <div class="input-container">
+        <input type="text" id="scratchURL" placeholder="貼上 Scratch 專案網址" onkeypress="handleKeyPress(event)">
+        <button onclick="addScratchProject()">新增專案</button>
+    </div>
+
+    <div id="scratchContainer"></div>
+
+    <script>
+        let maxProjects = 6;
+        let projectQueue = [];
+        let projectIDs = new Set(); // 用於檢查專案是否重複
+        let colorClasses = ["color-1", "color-2", "color-3", "color-4", "color-5", "color-6"];
+
+        function addScratchProject() {
+            let urlInput = document.getElementById("scratchURL");
+            let url = urlInput.value;
+            let idMatch = url.match(/projects\/(\d+)/);
+            
+            if (idMatch) {
+                let projectId = idMatch[1];
+
+                // **檢查是否已經存在相同的專案**
+                if (projectIDs.has(projectId)) {
+                    alert("專案重複，請重新上傳新的專案");
+                    return;
+                }
+
+                let embedUrl = `https://turbowarp.org/${projectId}/embed`;
+
+                let projectDiv = document.createElement("div");
+                projectDiv.classList.add("scratch-project");
+
+                let likeButton = document.createElement("button");
+                likeButton.classList.add("like-button");
+                likeButton.classList.add(colorClasses[projectQueue.length % colorClasses.length]); // 設定不同顏色
+                likeButton.innerHTML = `❤️ 0`;
+                likeButton.onclick = function() { increaseLike(this); };
+
+                let iframe = document.createElement("iframe");
+                iframe.src = embedUrl;
+                iframe.allowFullscreen = true;
+
+                projectDiv.appendChild(likeButton);
+                projectDiv.appendChild(iframe);
+
+                let container = document.getElementById("scratchContainer");
+                container.appendChild(projectDiv);
+
+                // **記錄專案**
+                projectQueue.push({ element: projectDiv, projectId: projectId, likes: 0, time: Date.now() });
+                projectIDs.add(projectId);
+
+                // **如果超過 6 個專案，淘汰最早上傳的專案**
+                if (projectQueue.length > maxProjects) {
+                    removeOldestProject();
+                }
+
+                urlInput.value = "";
+            } else {
+                alert("請輸入正確的 Scratch 專案網址！");
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                addScratchProject();
+            }
+        }
+
+        function increaseLike(button) {
+            let projectDiv = button.parentElement;
+            let projectData = projectQueue.find(p => p.element === projectDiv);
+            if (projectData) {
+                projectData.likes += 1;
+                button.innerText = `❤️ ${projectData.likes}`;
+            }
+        }
+
+        function removeOldestProject() {
+            let removedProject = projectQueue.shift();
+            projectIDs.delete(removedProject.projectId);
+            document.getElementById("scratchContainer").removeChild(removedProject.element);
+        }
+    </script>
+
+</body>
+</html>
+
